@@ -32,7 +32,7 @@ The smallest non-zero step size between two consecutive values is 63.
 This is our first big hint, that screams a power of 2 and that maybe we can shave off 6 bits on every single value. 2^ 6 = 64
 
 If we plot the histogram of all possible values we learn a lot!
-The values are in an approximate normal distribution, and the cast majority of them are clustered. This is good! More structure = higher compression.
+The values are in an approximate normal distribution, and the vast majority of them are clustered. This is good! More structure = higher compression.
 
 ![Histogram of All Data](Images/HistogramOfAllData.png)
 
