@@ -18,7 +18,7 @@ In this readme, you'll learn the following.
 
 ## Understanding the data and compression
 
-First piece of critical thinking. Is that most likely, neither I nor anyone else in this challenge will invent an entirely new general compression algorithm. Any performance gains we make will be from finding abnormal structure in the data, then building a compression algorithm that abuses that structure in a way that allows us to get significantly higher compression ratios than you would from a completely general algorithm.
+Most likely, neither I nor anyone else in this challenge will invent an entirely new general compression algorithm. Any performance gains we make will be from finding abnormal structure in the data, then building a compression algorithm that abuses that structure in a way that allows us to get significantly higher compression ratios than you would from a completely general algorithm.
 
 You can see how I initially explored the data in [playground.ipynb](https://github.com/dschonholtz/neuralink/blob/main/playground.ipynb)
 
