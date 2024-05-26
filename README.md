@@ -1,4 +1,10 @@
-# Neuralink Compression: 2.54 with Optimal Huffman Coding, and 2.268 or .6% better than zlib with one hop look up
+# Neuralink Compression:
+
+## 2.54 with Optimal Huffman Coding,
+
+## and 2.268 or .6% better than zlib with one hop look up,
+
+## 10x compression with some GPUs, data and a dream
 
 This work and readme is based off of my last 48 hours of learning C++ and compression for the first time in 8 years, exploring the data, and my last two years off and on doing seizure prediction with iEEG data at the Northeastern Wireless Networks and Embedded Systems Lab resulting in a couple papers.
 
@@ -8,12 +14,12 @@ So bear with me, it is rough around the edges.
 In this readme, you'll learn the following.
 
 1. How I got a score of 2.54 with huffman coding,
-2. Why you won't be able to use that neuralink
+2. Why you won't be able to use that at neuralink.
 3. How I built a slightly smaller in scope algorithm and combined it with zlib to beat the default zip performance which hopefully will top the leaderboards once I go and implement it in c++.
-4. How I explored the data both in jupyter notebooks and when staring at the raw binary and how it will be able to help you at neuralink.
-5. I will explain with a proof why lossless 200x compression is impossible with this dataset
+4. How I explored the data both in jupyter notebooks and when staring at the raw binary, which hopefully will serve as a foundation for future compression work.
+5. I will explain with a proof why lossless 200x compression is impossible with this dataset.
 6. I will explain how you can get to significantly higher compression ratios if you provide further data and/or allow some level of lossiness.
-7. Finally, I will explain how I would attempt to solve this problem if I was working at neuralink and had full access to your data and ML infra based on my last two years of working with similar data and ML pipelines.
+7. Finally, I will explain how I would attempt to solve this problem if I was working at neuralink and had full access to your data and ML infra based on my last two years of working with similar data and ML pipelines. (iEEG seizure prediction) I outline in this section how you theoretically could at least get to 10x compression with GPUs data and some luck
 8. Why you should please, please please hire me. Although maybe for ML on embedded systems rather than as a C++ embedded dev.
 
 ## Understanding the data and compression
