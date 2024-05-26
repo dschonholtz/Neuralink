@@ -179,6 +179,8 @@ The problem I expect you would run into, is even after aggressively pruning and 
 So what you might end up doing is for a single neuron at a time or for a group of them just attempt to predict the next value in the time series data.
 This model could be very small, and be run on a chip like the neuralink, although an embedded GPU would help, and could be accurate judging by our seizure prediction results: https://arxiv.org/abs/2401.06644
 
+## The 10x compression stuff
+
 This takes us to option two. Next signal prediction at BOTH the receiver and transmitter. What would be ideal, is to do error correction on chip before transmission. Given a channel's history, the neural network predicts a value 0-1023, that is confirmed as the correct value, and then the value is simply dropped. If the value is not correct, the chip transmits the entire value.
 Then you would only have to transmit the values and the locations in the array where the value is not correct, then on the receiver, you would run the exact same model to decompress everything except for the values you transmitted.
 
@@ -201,3 +203,12 @@ We experimented with a bunch of loss functions and model architectures and the 1
 The problems here come back to being patient specific, and having to train a new model for each patient, but maybe this could be overcome with transfer learning, hence my not giving you an implementation right now.
 
 If you gave me data and some GPUs then I'd love to give it a whirl though. I'll also run this by my lab and see if I can do this in parallel with the data pipeline stuff I'm currently working on.
+
+# Getting Started
+
+    python3 -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+    python3 python_play/Test.py compress --method lookup
+
+Or you can just look in the python notebooks
