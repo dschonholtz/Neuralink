@@ -2,18 +2,16 @@ import click
 import numpy as np
 import os
 import glob
-from BaseCompressor import (
-    MP3Compressor,
-    FLACCompressor,
-    ZIPCompressor,
-    HuffmanCompressor,
-    QuantizedCompressor,
-    RLECompressor,  # Import the RLECompressor
-)
 
-
-def verify_lossless(original: np.ndarray, decompressed: np.ndarray) -> bool:
-    return np.array_equal(original, decompressed)
+# from BaseCompressor import (
+#     MP3Compressor,
+#     FLACCompressor,
+#     ZIPCompressor,
+#     HuffmanCompressor,
+#     QuantizedCompressor,
+#     RLECompressor,
+# )
+from LookUpCompressor import LookUpCompressor, ZIPCompressor
 
 
 def print_compression_results(name: str, original_size: int, compressed_size: int):
@@ -25,21 +23,40 @@ def print_compression_results(name: str, original_size: int, compressed_size: in
     print()
 
 
-def calculate_file_sizes(file_paths):
-    file_sizes = [os.path.getsize(file) for file in file_paths]
-    print(file_sizes[0:5])
-    return sum(file_sizes)
+def calculate_file_size(file_path):
+    file_size = os.path.getsize(file_path)
+    # print(file_size)
+    return file_size
 
 
-def process_compression(compressor, method, original_size):
-    compressed_data = compressor.compress()
-    compressed_files = compressor.write_compressed_files(compressed_data, method)
-    compressed_size = calculate_file_sizes(compressed_files)
-    print_compression_results(method, original_size, compressed_size)
-    decompressed_data = compressor.decompress(compressed_data)
-    lossless = all(
-        verify_lossless(original, decompressed)
-        for original, decompressed in zip(compressor.audio_data, decompressed_data)
+def process_compression(compressor, method, data_dir):
+    # get the paths of all of the wav files in data_dir
+    wav_files = [
+        os.path.join(data_dir, file)
+        for file in os.listdir(data_dir)
+        if file.endswith(".wav")
+    ]
+    lossless = True
+    original_sizes = []
+    compressed_sizes = []
+    for wav_file in wav_files:
+        c = compressor(data_dir)
+        c.compress(wav_file)
+        compressed_size = calculate_file_size(wav_file + ".brainwire")
+        original_size = calculate_file_size(wav_file)
+        original_sizes.append(original_size)
+        compressed_sizes.append(compressed_size)
+        # print_compression_results(method, original_size, compressed_size)
+        c2 = compressor(None)
+        c2.decompress(wav_file + ".brainwire", wav_file + ".copy")
+        if lossless:
+            lossless = (
+                c2.load_audio_file(wav_file) == c2.load_audio_file(wav_file + ".copy")
+            ).all()
+    print(f"{method} original size: {sum(original_sizes) / len(original_sizes)}")
+    print(f"{method} compressed size: {sum(compressed_sizes) / len(compressed_sizes)}")
+    print(
+        f"{method} compression ratio: {(sum(original_sizes) / len(original_sizes)) / (sum(compressed_sizes) / len(compressed_sizes))}"
     )
     if lossless:
         print(f"{method} compression is lossless!")
@@ -55,7 +72,15 @@ def cli():
 @cli.command()
 @click.option(
     "--method",
-    type=click.Choice(["mp3", "flac", "zip", "huffman", "quantized", "rle", "all"]),
+    type=click.Choice(
+        [
+            # "mp3", "flac",
+            "zip",
+            #  "huffman", "quantized", "rle",
+            "lookup",
+            "all",
+        ]
+    ),
     default="all",
     help="Compression method to use",
 )
@@ -68,27 +93,20 @@ def cli():
 def compress(method, data_dir):
     print("using method: ", method)
     compressors = {
-        "mp3": MP3Compressor(data_dir),
-        "flac": FLACCompressor(data_dir),
-        "zip": ZIPCompressor(data_dir),
-        "huffman": HuffmanCompressor(data_dir),
-        "quantized": QuantizedCompressor(data_dir),
-        "rle": RLECompressor(data_dir),  # Add RLECompressor to the dictionary
+        # "mp3": MP3Compressor(data_dir),
+        # "flac": FLACCompressor(data_dir),
+        "zip": ZIPCompressor,
+        # "huffman": HuffmanCompressor(data_dir),
+        # "quantized": QuantizedCompressor(data_dir),
+        # "rle": RLECompressor(data_dir),
+        "lookup": LookUpCompressor,  # Add LookUpCompressor to the dictionary
     }
-
-    original_size = calculate_file_sizes(
-        [
-            os.path.join(data_dir, file)
-            for file in os.listdir(data_dir)
-            if file.endswith(".wav")
-        ]
-    )
 
     if method == "all":
         for name, compressor in compressors.items():
-            process_compression(compressor, name, original_size)
+            process_compression(compressor, name, data_dir)
     else:
-        process_compression(compressors[method], method, original_size)
+        process_compression(compressors[method], method, data_dir)
 
 
 @cli.command()

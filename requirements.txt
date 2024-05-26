@@ -3,3 +3,4 @@ matplotlib
 pydub
 click
 soundfile
+pyedflib

@@ -1,3 +1,12 @@
+"""
+This is old code I am considering porting to the format seenin LookUpCompressor with
+`BetterBaseCompressor`
+
+These try to convert all of the files and have the compressor class handle that.
+
+That is a bad separation of concerns and hard to work with.
+"""
+
 from abc import ABC, abstractmethod
 from typing import Any, List
 import numpy as np
@@ -97,27 +106,6 @@ class FLACCompressor(BaseCompressor):
             buffer = BytesIO(data)
             audio_data, _ = sf.read(buffer, dtype="int16")
             decompressed_data.append(audio_data.T)
-        return decompressed_data
-
-
-import zlib
-
-
-class ZIPCompressor(BaseCompressor):
-    def compress(self) -> List[bytes]:
-        compressed_data = []
-        for audio in self.audio_data:
-            compressed_data.append(zlib.compress(audio.tobytes()))
-        return compressed_data
-
-    def decompress(self, compressed_data: List[bytes]) -> List[np.ndarray]:
-        decompressed_data = []
-        for i, data in enumerate(compressed_data):
-            decompressed_data.append(
-                np.frombuffer(zlib.decompress(data), dtype=np.int16).reshape(
-                    self.audio_data[i].shape
-                )
-            )
         return decompressed_data
 
 
@@ -273,6 +261,7 @@ class QuantizedCompressor(BaseCompressor):
         return decompressed_data
 
 
+# I don't think this one works
 class RLECompressor(BaseCompressor):
     def compress(self) -> List[bytes]:
         compressed_data = []
