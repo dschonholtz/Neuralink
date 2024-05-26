@@ -63,52 +63,6 @@ class BaseCompressor(ABC):
         pass
 
 
-class MP3Compressor(BaseCompressor):
-    def compress(self) -> List[bytes]:
-        compressed_data = []
-        for i, audio in enumerate(self.audio_data):
-            audio_segment = AudioSegment(
-                audio.tobytes(),
-                frame_rate=19531,  # Updated frame_rate
-                sample_width=2,
-                channels=1,
-            )
-            buffer = BytesIO()
-            audio_segment.export(buffer, format="mp3")
-            buffer.seek(0)  # Reset buffer position to the beginning
-            compressed_data.append(buffer.getvalue())
-        return compressed_data
-
-    def decompress(self, compressed_data: List[bytes]) -> List[np.ndarray]:
-        decompressed_data = []
-        for data in compressed_data:
-            buffer = BytesIO(data)
-            audio_segment = AudioSegment.from_file(buffer, format="mp3")
-            audio_array = np.array(audio_segment.get_array_of_samples(), dtype=np.int16)
-            decompressed_data.append(
-                audio_array.reshape((-1, audio_segment.channels)).T
-            )
-        return decompressed_data
-
-
-class FLACCompressor(BaseCompressor):
-    def compress(self) -> List[bytes]:
-        compressed_data = []
-        for audio in self.audio_data:
-            buffer = BytesIO()
-            sf.write(buffer, audio.T, 19531, format="FLAC")  # Updated frame_rate
-            compressed_data.append(buffer.getvalue())
-        return compressed_data
-
-    def decompress(self, compressed_data: List[bytes]) -> List[np.ndarray]:
-        decompressed_data = []
-        for data in compressed_data:
-            buffer = BytesIO(data)
-            audio_data, _ = sf.read(buffer, dtype="int16")
-            decompressed_data.append(audio_data.T)
-        return decompressed_data
-
-
 import heapq
 from collections import defaultdict, Counter
 

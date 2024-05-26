@@ -5,6 +5,10 @@ from abc import ABC
 import soundfile as sf
 from pathlib import Path
 import zlib
+from pydub import AudioSegment
+from io import BytesIO
+import soundfile as sf
+import os
 
 
 class BetterBaseCompressor(ABC):
@@ -42,6 +46,43 @@ class BetterBaseCompressor(ABC):
         pass
 
 
+class MP3Compressor(BetterBaseCompressor):
+    def compress(self, filename: str):
+        audio = self.load_audio_file(Path(filename))
+        audio_segment = AudioSegment(
+            audio.tobytes(),
+            frame_rate=19531,  # Updated frame_rate
+            sample_width=2,
+            channels=1,
+        )
+        buffer = BytesIO()
+        audio_segment.export(buffer, format="mp3")
+        buffer.seek(0)  # Reset buffer position to the beginning
+        self.write_compressed_file(buffer.getvalue(), Path(filename))
+
+    def decompress(self, input_filename: str, output_filename: str):
+        compressed_data = self.load_compressed_file(Path(input_filename))
+        buffer = BytesIO(compressed_data)
+        audio_segment = AudioSegment.from_file(buffer, format="mp3")
+        audio_array = np.array(audio_segment.get_array_of_samples(), dtype=np.int16)
+        self.write_audio_file(audio_array, Path(output_filename))
+
+
+class FLACCompressor(BetterBaseCompressor):
+    def compress(self, filename: str):
+        audio = self.load_audio_file(Path(filename))
+        buffer = BytesIO()
+        sf.write(buffer, audio.T, 19531, format="FLAC")  # Updated frame_rate
+
+        self.write_compressed_file(buffer.getvalue(), Path(filename))
+
+    def decompress(self, input_filename: str, output_filename: str):
+        compressed_data = self.load_compressed_file(Path(input_filename))
+        buffer = BytesIO(compressed_data)
+        audio_data, _ = sf.read(buffer, dtype="int16")
+        self.write_audio_file(audio_data, Path(output_filename))
+
+
 import zlib
 
 
@@ -59,7 +100,7 @@ class ZIPCompressor(BetterBaseCompressor):
 
 class LookUpCompressor(BetterBaseCompressor):
     def __init__(self, data_dir: str, table_size: int = 128, zlib: bool = True):
-        super().__init__()
+        super().__init__(data_dir)
         self.table_size = table_size
         self.zlib = zlib
         self.lookup_table, self.next_value_prob = self.build_lookup_table(data_dir)

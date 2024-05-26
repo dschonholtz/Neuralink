@@ -5,3 +5,7 @@ __pycache__
 data.zip
 venv/
 data/
+*.npy
+*.zip
+*.wav
+*.dat

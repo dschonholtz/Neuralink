@@ -11,7 +11,12 @@ import glob
 #     QuantizedCompressor,
 #     RLECompressor,
 # )
-from LookUpCompressor import LookUpCompressor, ZIPCompressor
+from LookUpCompressor import (
+    LookUpCompressor,
+    ZIPCompressor,
+    MP3Compressor,
+    FLACCompressor,
+)
 
 
 def print_compression_results(name: str, original_size: int, compressed_size: int):
@@ -50,9 +55,16 @@ def process_compression(compressor, method, data_dir):
         c2 = compressor(None)
         c2.decompress(wav_file + ".brainwire", wav_file + ".copy")
         if lossless:
-            lossless = (
-                c2.load_audio_file(wav_file) == c2.load_audio_file(wav_file + ".copy")
-            ).all()
+            try:
+                lossless = (
+                    c2.load_audio_file(wav_file)
+                    == c2.load_audio_file(wav_file + ".copy")
+                ).all()
+            except Exception as e:
+                print(
+                    "Error when trying to compare wavs. Setting lossless to false ", e
+                )
+                lossless = False
     print(f"{method} original size: {sum(original_sizes) / len(original_sizes)}")
     print(f"{method} compressed size: {sum(compressed_sizes) / len(compressed_sizes)}")
     print(
@@ -74,7 +86,8 @@ def cli():
     "--method",
     type=click.Choice(
         [
-            # "mp3", "flac",
+            "mp3",
+            "flac",
             "zip",
             #  "huffman", "quantized", "rle",
             "lookup",
@@ -93,8 +106,8 @@ def cli():
 def compress(method, data_dir):
     print("using method: ", method)
     compressors = {
-        # "mp3": MP3Compressor(data_dir),
-        # "flac": FLACCompressor(data_dir),
+        "mp3": MP3Compressor,
+        "flac": FLACCompressor,
         "zip": ZIPCompressor,
         # "huffman": HuffmanCompressor(data_dir),
         # "quantized": QuantizedCompressor(data_dir),
