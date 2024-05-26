@@ -47,9 +47,7 @@ Instead we see:
 
 Part of the importance here comes from thinking about bitwise representation of numbers. If we can represent the vast majority of the numbers with fewer bits, then we should be able to generate higher compression ratios.
 
-The difference between representing all of the data and 75% of the data is 4 bits per value, this certainly isn't nothing, but it isn't as much as one would hope if you are trying to beat 2.2x compression.
-
-2048, 4096, 8192, 16384, 32768, 65536
+The difference between representing all of the data and 75% of the data is 4 bits per value. This is because 75% of the data can be represented with 4096 integers 2^12, and all of the values can be represented with 65536 values 2^16 This certainly isn't nothing, but it isn't as much as one would hope if you are trying to beat 2.2x compression.
 
 Nevertheless, this is where I started.
 
