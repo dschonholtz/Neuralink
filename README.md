@@ -44,16 +44,19 @@ Instead we see:
     85% of the data falls between -1377.0 and 3234.0
     95% of the data falls between -2851.0 and 4643.0
     99% of the data falls between -10026.0 and 12971.0
+    Total number of unique values: 1023
 
 Part of the importance here comes from thinking about bitwise representation of numbers. If we can represent the vast majority of the numbers with fewer bits, then we should be able to generate higher compression ratios.
 
 The difference between representing all of the data and 75% of the data is 4 bits per value. This is because 75% of the data can be represented with 4096 integers 2^12, and all of the values can be represented with 65536 values 2^16 This certainly isn't nothing, but it isn't as much as one would hope if you are trying to beat 2.2x compression.
 
-Nevertheless, this is where I started.
+We also could potentially really lean on the fact that there only appear to be 1023 active values that are actually used. If this is true, then we could assign a 10 bit number to each value. I have assumed for now that there may be other data outside of this distribution that are valid int16s. However, if this is fair game, you may be able to knock off 1/3 of the data before you do the rest of your compression. I'll get into later why this isn't as exciting as it might initially sound, but might give us another percent.
+
+## Let's get into comparing algorithms
 
 I compared huffman coding(from scratch), zip, mp3 (I know it is lossy, I was curious), FLAC, and a look up compressor (You don't recognize this name because I made it up).
 
-I did all of this initially in python so it isn't compatible with the neuralink test suite, but I wrote my own.
+I did all of this initially in python so it isn't compatible with the neuralink test suite, but I wrote my own test suite to see how we were dong. I also wrote huffman and some other stuff in C++, which was fun to learn, but I am just really slow working through C++. It is fun to viscerally see how much faster C++ is though.
 
 I initially got these values:
 
@@ -68,15 +71,13 @@ I initially got these values:
 Let's back up a second, and explain why I chose Huffman, what it does, and why I thought it might do well here. Then we'll explain why this might be too good to be true.
 
 Huffman, encodes common values via a tree with smaller binary representations.
-This means that your most common values take the least bits.
-
-And we saw in our distribution of data, we have a lot of common values!
+This means that your most common values take the least bits. This is good, because as we saw in our distribution of data, we have a lot of common values!
 
 In my implementation in python, I built an optimal huffman tree for each 5 second data source individually. This meant that every piece of data had a representation in the huffman tree, and that nothing else did.
 
-The obvious problem there, that I didn't realize until after implementing it, is that this means that if you must decode in a separate place from where you encode, you either have to have a common pre-determined tree, or you must transmit the entire tree!
+The obvious problem there, that I didn't realize until after implementing it, is that this means that if you must decode in a separate place from where you encode, you either have to have a common pre-determined tree, or you must transmit the entire tree! The common tree is viable, but will be large!
 
-So I attempted to build a huffman implementation that is based off of the entire distribution of all of the data, and found that this of course is outperformed by zip by decent margin. When we peak under the hood at the zip algorithm, DEFLATE, this makes sense too. DEFLATE uses huffman trees and combines it with a form of run length encoding to get such a good general performance.
+So I attempted to build a huffman implementation that is based off of the entire distribution of all of the data, and found that this of course is outperformed by zip by decent margin. This makes sense when we peak under the hood at the zip algorithm, DEFLATE. DEFLATE uses huffman trees and combines it with a form of run length encoding to get such a good general performance.
 
 I was almost ready to give up, but then I was briefly looking at the raw binary and saw the sinusoidal pattern you normally see in EEG data.
 
@@ -105,7 +106,7 @@ The thought is there is a chance, that we can store a look up table for each ind
 As if you can represent 32 possible next values, then you only need
 5 bits to do that.
 
-So I built something that naively looks at the current value, and then looks at the most common next possible value for the entire dataset.
+So I built a look up algorithm that naively looks at the current value, and then looks at the most common next possible values for that now previous value. If it exists we just need to transmit this smaller bit string representing the position in common next values for the current value. If it doesn't we can transmit the entire normal value.
 
 I add a bit in front of this bit string to signify if it exists or not in the look up table. Then I tested look up tables for each value of length 32, 64, 128 and 256.
 
@@ -117,7 +118,9 @@ So then we combine that with zlib again.
 
 That gets us to a whopping 2.268. Or about 0.6% improvement over zlib. This is a technical improvement, but not by much.
 
-We can potentially adjust the look up table to be for pairs, but that starts to look like the combination of run length encoding paired with huffman coding which of course is what zip does.
+We can potentially adjust the look up table to be for pairs, but that starts to look like the combination of run length encoding paired with huffman coding which of course is what zip does. Another thing we could do is to use the fact that we only see 1023 unique values in this dataset. Then for all of the cache misses, we could at least still encode the missed values as 10 bits instead of 16.
+
+I did the math on that though, and we hit the look up table successfully 96+% of the time with a look up table of 128 values for every value seen. This means that only for four percent of values have cache misses and would benefit from the remove 6 bits. But that still would be about 1/3 of that 4%. Removing another 1.33% before going to zlib. If you want to do that I will happily take a PR.
 
 ## What is next?
 
@@ -144,13 +147,18 @@ We can see that different channel have between 1 and 5% overlap with other chann
 
 ![EDF Histogram](Images/EdfHistogram.png)
 
-The naive interpretation of this suggests at least for the EDG scalp EEG dataset, the values are not strongly correlated, and to know if we could further compress data with correlation between neighboring signals, we would have to look directly at the full neuralink data, but it doesn't not look particularly promising given these preliminary results.
+The naive interpretation of this suggests, at least for the scalp EEG dataset, the values are not strongly correlated, and to know if we could further compress data with correlation between neighboring signals, we would have to look directly at the full neuralink dataset which has not been provided, but it does not look particularly promising given these preliminary results from the EDF dataset.
 
 # This problem doesn't seem tractable. How do we solve it anyway?
 
-So far, we have learned a lot, but haven't made much headway. How could we make progress? Well, the obvious answer would be to use a neural network to do the compression and to accept some loss. The neuralink team probably doesn't want to do this, because they do not want to build a compression algorithm that drops data that their ML team might pick up on, but the ML team is likely compressing this data in their model anyway for specific tasks.
+So far, we have learned a lot, but haven't made much headway. How could we make progress? There are two options I can think of with neural networks.
 
-On top of this, in academia, this exact problem, transmission being too expensive is the exact reason the lab I have worked in does the ML in chip in your head rather than attempting to transmit the data to an external source. The problem is, since neuralink want to eventually do arbitrary data processing with this data, you need to be able to transmit it all somewhere else. This has other problems like the data often needs to be trained per person, it is hard to do transfer learning well between patients, but it still at least appears to be possible.
+1. Do the compression and to accept some loss with an auto encoder esque architecture.
+2. Do next signal prediction with a neural network and do error correction on chip before sending the result. Use the same neural network on the receiver to reproduce the values.
+
+The neuralink team probably doesn't want to do option 1 because they do not want to build a compression algorithm that drops data that their ML team might otherwise be able to use, but the ML team is likely compressing this data in their model anyway for specific tasks. So perhaps there is a world where you build an auto encoder and the ML team trains all of their models on top of that directly and everything is ok.
+
+On top of this, in academia, this exact problem, transmission being too expensive, is the exact reason the lab I have worked in does the ML in chip in a patient's head rather than attempting to transmit the data to an external source. The problem is, since neuralink presumably wants to do arbitrary data processing with this data, you need to be able to transmit it all somewhere else. Training a model to do compression or arbitrary other tasks in the patients skull has other problems too. The data often needs to be trained per person, it is hard to do transfer learning well between patients, but it still at least appears to be possible.
 
 The solution most likely looks like an auto encoder network as pictured below.
 
@@ -163,10 +171,24 @@ What is tricky about this, is that this is closer to video, so the auto encoder 
 The problem I expect you would run into, is even after aggressively pruning and quantizing the model, you still can't realistically fit it on your chip.
 
 So what you might end up doing is for a single neuron at a time or for a group of them just attempt to predict the next value in the time series data.
-This model could be very small, and be run on a chip like the neuralink, although an embedded GPU would help, and should be accurate judging by our seizure prediction results: https://arxiv.org/abs/2401.06644
+This model could be very small, and be run on a chip like the neuralink, although an embedded GPU would help, and could be accurate judging by our seizure prediction results: https://arxiv.org/abs/2401.06644
 
-Then you could check if the predicted result is correct.
+This takes us to option two. Next signal prediction at BOTH the receiver and transmitter. What would be ideal, is to do error correction on chip before transmission. Given a channel's history, the neural network predicts a value 0-1023, that is confirmed as the correct value, and then the value is simply dropped. If the value is not correct, the chip transmits the entire value.
 Then you would only have to transmit the values and the locations in the array where the value is not correct, then on the receiver, you would run the exact same model to decompress everything except for the values you transmitted.
+
+The problem with any embedded neural network here will probably be network size. You probably won't even be able to predict 1024 values, but you could probably predict 128, and as saw earlier that has a hit rate of 96%.
+
+So if you could have a neural network that predicted the next signal ~85% of the time. You compress the remaining bits down to 10 bits each you actually would be at a lossless 10x compression.
+You could probably juice those numbers a bit too for when the network was wrong, but it's second or third choice was correct you could transmit a small number of bits to signify what place in the networks output it was.
+
+Something like:
+
+    0 bits if network gets it right.
+    4 bits if the network was wrong but the correct choice was in the top 16 it predicted.
+    7 bits if it is somewhere else in the top 128
+    10 bits if the network was just wrong completely.
+
+You would have some overhead, but this starts to feel doable. Especially since you could probably run the network even on a CPU with a batch size of 32 or 64 very quickly so doing 16 batches of 64 for all 1024 neurons might be possible even with the crazy latency requirements described.
 
 We experimented with a bunch of loss functions and model architectures and the 1D CNN with a focal loss function performed the best for seizure prediction for a single channel and I'm guessing it may perform well in predicting the next value for a stream as well.
 

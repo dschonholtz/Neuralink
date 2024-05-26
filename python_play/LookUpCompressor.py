@@ -99,12 +99,14 @@ class ZIPCompressor(BetterBaseCompressor):
 
 
 class LookUpCompressor(BetterBaseCompressor):
-    def __init__(self, data_dir: str, table_size: int = 128, zlib: bool = True):
+    def __init__(self, data_dir: str, table_size: int = 128, zlib: bool = False):
         super().__init__(data_dir)
         self.table_size = table_size
         self.zlib = zlib
         self.lookup_table, self.next_value_prob = self.build_lookup_table(data_dir)
         self.lookup_dict = {value: idx for idx, value in enumerate(self.lookup_table)}
+        self.lookup_hits = 0
+        self.total_hits = 0
 
     def build_lookup_table(self, data_dir: str) -> (np.ndarray, dict):
         lookup_table_file = "lookup_table.npy"
@@ -184,13 +186,17 @@ class LookUpCompressor(BetterBaseCompressor):
         compressed_bits.append(count_bits)
 
         for i, value in enumerate(audio):
+            self.total_hits += 1
             if i == 0 or value not in self.lookup_dict:
                 if value in self.lookup_dict:
                     index = self.lookup_dict[value]
+                    self.lookup_hits += 1
                     compressed_bits.append(
                         f"0{index:0{index_bits}b}"
                     )  # 0 bit for flag + index_bits for index
                 else:
+                    # TODO Instead of 16 bits, this could be 10 bits
+                    # this is using the 1023 total possible values as discovered when looking at unique bits
                     compressed_bits.append(
                         f"1{value & 0xFFFF:016b}"
                     )  # 1 bit for flag + 16 bits for value upscaled to be uint16
@@ -199,6 +205,7 @@ class LookUpCompressor(BetterBaseCompressor):
                 compressed_bits.append(
                     f"0{index:0{index_bits}b}"
                 )  # 1 bit for flag + index_bits for index
+                self.lookup_hits += 1
 
         # Join all bits into a single string
         bit_string = "".join(compressed_bits)

@@ -44,8 +44,8 @@ def process_compression(compressor, method, data_dir):
     lossless = True
     original_sizes = []
     compressed_sizes = []
+    c = compressor(data_dir)
     for wav_file in wav_files:
-        c = compressor(data_dir)
         c.compress(wav_file)
         compressed_size = calculate_file_size(wav_file + ".brainwire")
         original_size = calculate_file_size(wav_file)
@@ -65,6 +65,9 @@ def process_compression(compressor, method, data_dir):
                     "Error when trying to compare wavs. Setting lossless to false ", e
                 )
                 lossless = False
+    print("lookup hits: ", c.lookup_hits)
+    print("total hits: ", c.total_hits)
+    print("lookup ratio: ", c.lookup_hits / c.total_hits)
     print(f"{method} original size: {sum(original_sizes) / len(original_sizes)}")
     print(f"{method} compressed size: {sum(compressed_sizes) / len(compressed_sizes)}")
     print(
