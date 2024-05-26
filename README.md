@@ -40,10 +40,10 @@ As we look closer though it is a bit concerning that the data is not as normal a
 
 Instead we see:
 
-75% of the data falls between -801.0 and 2658.0
-85% of the data falls between -1377.0 and 3234.0
-95% of the data falls between -2851.0 and 4643.0
-99% of the data falls between -10026.0 and 12971.0
+    75% of the data falls between -801.0 and 2658.0
+    85% of the data falls between -1377.0 and 3234.0
+    95% of the data falls between -2851.0 and 4643.0
+    99% of the data falls between -10026.0 and 12971.0
 
 Part of the importance here comes from thinking about bitwise representation of numbers. If we can represent the vast majority of the numbers with fewer bits, then we should be able to generate higher compression ratios.
 
