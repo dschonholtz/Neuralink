@@ -11,12 +11,13 @@ import glob
 #     QuantizedCompressor,
 #     RLECompressor,
 # )
-from LookUpCompressor import (
+from BetterBaseCompressor import (
     LookUpCompressor,
     ZIPCompressor,
     MP3Compressor,
     FLACCompressor,
 )
+from ProbLookUp import ProbLookUpCompressor
 
 
 def print_compression_results(name: str, original_size: int, compressed_size: int):
@@ -94,6 +95,7 @@ def cli():
             "zip",
             #  "huffman", "quantized", "rle",
             "lookup",
+            "betterLookup",
             "all",
         ]
     ),
@@ -115,7 +117,8 @@ def compress(method, data_dir):
         # "huffman": HuffmanCompressor(data_dir),
         # "quantized": QuantizedCompressor(data_dir),
         # "rle": RLECompressor(data_dir),
-        "lookup": LookUpCompressor,  # Add LookUpCompressor to the dictionary
+        "lookup": LookUpCompressor,
+        "betterLookup": ProbLookUpCompressor,
     }
 
     if method == "all":

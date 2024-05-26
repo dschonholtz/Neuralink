@@ -204,6 +204,42 @@ The problems here come back to being patient specific, and having to train a new
 
 If you gave me data and some GPUs then I'd love to give it a whirl though. I'll also run this by my lab and see if I can do this in parallel with the data pipeline stuff I'm currently working on.
 
+## Wait do we we need the Neural Net? (Requirements and complexity are bad)
+
+Training neural networks is time consuming error prone, and potentially faulty.
+In the look up compressor, we already have the probability distribution of the potential next values. A time series neural network would probably do better, but the idea of we can send less bits for common next values hasn't been fully squeezed yet and is still notably distinct from general common sequence matching in run length encoding or in huffman.
+
+So let's go back to our jupyter notebook, load up the generated lookup_table.npy file that Lookup compressor generated and then we can calculate what the optimal window size is and how to send less bits.
+
+The idea is the optimal window size may be 128, but maybe if in the value is in the top 4 common positions we only send 2 bits to signify that.
+
+So something like:
+
+Break potential outputs into 4 sections.
+
+1. The result is in the top 8 results
+2. The result is in the top 32 results
+3. The result is in the top 128 results
+4. The result wasn't in the top 128
+
+We then can transmit 2 bits to signify which category it is in. Then:
+
+    3 bits for category 1
+    5 bits for category 2
+    7 bits for category 3
+    10 bits for category 4
+
+Looking at a quick notebook calculation:
+
+    Top 1 positions: 16.53% of values
+    Top 2 positions: 28.04% of values
+    Top 4 positions: 44.58% of values
+    Top 8 positions: 65.84% of values
+    Top 16 positions: 88.07% of values
+    Top 32 positions: 99.61% of values
+    Top 64 positions: 100.00% of values # something is off because I thought I saw 128 beat 64
+    Top 128 positions: 100.00% of values
+
 # Getting Started
 
     python3 -m venv venv
@@ -212,3 +248,11 @@ If you gave me data and some GPUs then I'd love to give it a whirl though. I'll 
     python3 python_play/Test.py compress --method lookup
 
 Or you can just look in the python notebooks
+
+# Appendix
+
+![Pic of Huffman Design Diagram](Images/HuffmanDiagram.png)
+
+Figma for where I am doing some design like the above.
+
+https://www.figma.com/board/heWNpubt54RsLYn13DYlH5/Untitled?node-id=0-1&t=CfNTYalkSzWcyR8q-1

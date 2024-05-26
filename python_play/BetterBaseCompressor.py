@@ -99,7 +99,7 @@ class ZIPCompressor(BetterBaseCompressor):
 
 
 class LookUpCompressor(BetterBaseCompressor):
-    def __init__(self, data_dir: str, table_size: int = 128, zlib: bool = False):
+    def __init__(self, data_dir: str, table_size: int = 64, zlib: bool = False):
         super().__init__(data_dir)
         self.table_size = table_size
         self.zlib = zlib
