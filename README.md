@@ -14,7 +14,7 @@ In this readme, you'll learn the following.
 5. I will explain with a proof why lossless 200x compression is impossible with this dataset
 6. I will explain how you can get to significantly higher compression ratios if you provide further data and/or allow some level of lossiness.
 7. Finally, I will explain how I would attempt to solve this problem if I was working at neuralink and had full access to your data and ML infra based on my last two years of working with similar data and ML pipelines.
-8. Why you should please, please please hire me. Although maybe for ML on embedded systems rather than as a C++ dev.
+8. Why you should please, please please hire me. Although maybe for ML on embedded systems rather than as a C++ embedded dev.
 
 ## Understanding the data and compression
 
