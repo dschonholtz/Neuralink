@@ -10,7 +10,7 @@ class ProbLookUpCompressor(BetterBaseCompressor):
     def __init__(
         self,
         data_dir: str,
-        table_size: int = 128,
+        table_size: int = 32,
         zlib: bool = False,
     ):
         super().__init__(data_dir)
@@ -24,33 +24,31 @@ class ProbLookUpCompressor(BetterBaseCompressor):
         self.total_hits = 0
         self.values_compressed = 0
         self.values_decompressed = 0
-        self.categories = [
-            1,
-            4 + 1,
-            123 + 4 + 1,
+
+        # Initialize categories based on ranges
+        self.categories = [1, 5, 33]  # Ends of each category range
+        self.category_bits = [0] + [
+            self.calculate_bits(n - self.categories[i - 1])
+            for i, n in enumerate(self.categories[1:], start=1)
         ]
-        if self.categories[3] != self.table_size:
-            raise ValueError("categories[3] != table_size")
+
+    def calculate_bits(self, num_values):
+        from math import ceil, log2
+
+        return ceil(log2(num_values))
 
     def get_category(self, index: int) -> int:
-        if index < self.categories[0]:
-            return 0
-        elif index < self.categories[1]:
-            return 1
-        elif index < self.categories[2]:
-            return 2
-        else:
-            return 3
+        for i, cat_end in enumerate(self.categories):
+            if index < cat_end:
+                return i
+        return len(self.categories) - 1
 
     def get_bits_for_category(self, category: int, index: int) -> str:
         if category == 0:
-            return f"00"
-        elif category == 1:
-            return f"01{index - self.categories[0]:02b}"
-        elif category == 2:
-            return f"10{index - self.categories[1]:07b}"
-        else:
-            return f"11{index:010b}"
+            return "00"  # No additional bits needed, only one value
+        offset = self.categories[category - 1] if category > 0 else 0
+        bits_needed = self.category_bits[category]
+        return f"{format(category, '02b')}{index - offset:0{bits_needed}b}"
 
     def build_lookup_table(self, data_dir: str) -> (np.ndarray, dict):
         lookup_table_file = "lookup_table.npy"
@@ -93,21 +91,12 @@ class ProbLookUpCompressor(BetterBaseCompressor):
         return lookup_table, index_map
 
     def compress(self, filename: str):
-        # print("compressing: ", filename)
         compressed_bits = []
         audio = self.load_audio_file(Path(filename))
-        # print("audio length: ", len(audio))
-        # print("first 5 vals: ", audio[:5])
-        # print("last 5 vals: ", audio[-5:])
 
         # Add the count of int16 values as a 32-bit binary string
         count_bits = f"{len(audio):032b}"
         compressed_bits.append(count_bits)
-
-        # Buffer to store the last 5 values
-        last_five_values = []
-        first_index = None
-        last_index = None
 
         for i, value in enumerate(audio):
             if i == 0 or value not in self.lookup_dict:
@@ -123,105 +112,64 @@ class ProbLookUpCompressor(BetterBaseCompressor):
                 index = self.lookup_dict[value]
                 category = self.get_category(index)
                 compressed_bits.append(self.get_bits_for_category(category, index))
-            if first_index is None:
-                first_index = index
-            last_index = index
-
-            # Update the last five values buffer
-            last_five_values.append(value)
-            if len(last_five_values) > 5:
-                last_five_values.pop(0)
 
         bit_string = "".join(compressed_bits)
-        # print("raw bit string length: ", len(bit_string))
-        # print("first index: ", first_index)
-        # print("last index: ", last_index)
-        # print("lookuptable 31:65", self.lookup_table[31:65])
-        # print the dict values and their indices between 31 and 65
-        # for value in self.lookup_table[31:65]:
-        #     print(f"{value}: {self.lookup_dict[value]}")
 
         # Pad the bit string to make its length a multiple of 8
         padding_length = (8 - len(bit_string) % 8) % 8
         bit_string = bit_string + "0" * padding_length
-        # print("padded bit string length: ", len(bit_string))
 
         # Convert the bit string to bytes
         byte_array = int(bit_string, 2).to_bytes(
             (len(bit_string) + 7) // 8, byteorder="big"
         )
-        # print("byte array length: ", len(byte_array))
 
         if self.zlib:
             byte_array = zlib.compress(byte_array, level=zlib.Z_BEST_COMPRESSION)
 
         self.write_compressed_file(byte_array, Path(filename))
 
-        # Print the last five values
-        # print("Last 5 values compressed:", last_five_values)
-
     def decompress(self, input_filename: str, output_filename: str):
-        # print("decompressing: ", input_filename)
         compressed_data = self.load_compressed_file(Path(input_filename))
-        # print("compressed data length: ", len(compressed_data))
 
         if self.zlib:
             compressed_data = zlib.decompress(compressed_data)
 
         bit_string = "".join(f"{byte:08b}" for byte in compressed_data)
-        # print("bit string length: ", len(bit_string))
 
         # Read the count of int16 values from the first 32 bits
         count = int(bit_string[:32], 2)
         bit_string = bit_string[32:]
 
         decompressed_data = []
-        last_decoded = None
-        first_index = None
-        last_index = None
         i = 0
         while len(decompressed_data) < count:
             category_bits = bit_string[i : i + 2]
             i += 2
-            # print(f"Category bits: {category_bits}")
             if category_bits == "00":
                 index = 0
                 decompressed_data.append(self.lookup_table[0])
             elif category_bits == "01":
-                index = int(bit_string[i : i + 2], 2) + self.categories[0]
-                i += 2
+                index = (
+                    int(bit_string[i : i + self.category_bits[1]], 2)
+                    + self.categories[0]
+                )
+                i += self.category_bits[1]
                 decompressed_data.append(self.lookup_table[index])
             elif category_bits == "10":
-                index = int(bit_string[i : i + 7], 2) + self.categories[1]
-                i += 7
+                index = (
+                    int(bit_string[i : i + self.category_bits[2]], 2)
+                    + self.categories[1]
+                )
+                i += self.category_bits[2]
                 decompressed_data.append(self.lookup_table[index])
             else:  # "11"
-                try:
-                    index = int(bit_string[i : i + 10], 2)
-                except:
-                    print("bit string: ", bit_string[i : i + 10])
-                    print("index out of bounds")
-                    print("i: ", i)
-                    print("index: ", index)
-                    print("last_decoded: ", last_decoded)
-                    print("len(self.lookup_table): ", len(self.lookup_table))
-                    print("count: ", count)
-                    print("len(decompressed_data): ", len(decompressed_data))
-                    print("first 5 vals: ", decompressed_data[:5])
-                    print("last 5 vals: ", decompressed_data[-5:])
-                    print("first index: ", first_index)
-                    print("last index: ", last_index)
-                    print("lookuptable 31:65", self.lookup_table[31:65])
-                    raise
+                index = int(bit_string[i : i + 10], 2)
                 i += 10
                 value = list(self.index_map.keys())[
                     list(self.index_map.values()).index(index)
                 ]
                 decompressed_data.append(value)
-            last_decoded = decompressed_data[-1]
-            if first_index is None:
-                first_index = index
-            last_index = index
 
         # Convert the decompressed data back to the original audio data format
         audio_data = np.array(decompressed_data, dtype=np.int16)
