@@ -66,9 +66,6 @@ def process_compression(compressor, method, data_dir):
                     "Error when trying to compare wavs. Setting lossless to false ", e
                 )
                 lossless = False
-    print("lookup hits: ", c.lookup_hits)
-    print("total hits: ", c.total_hits)
-    print("lookup ratio: ", c.lookup_hits / c.total_hits)
     print(f"{method} original size: {sum(original_sizes) / len(original_sizes)}")
     print(f"{method} compressed size: {sum(compressed_sizes) / len(compressed_sizes)}")
     print(

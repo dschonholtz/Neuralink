@@ -10,3 +10,6 @@ data/
 *.wav
 *.dat
 *.npy
+.idea
+.vscode
+.codiumai.toml
