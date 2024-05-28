@@ -271,6 +271,8 @@ Looking at a quick notebook calculation:
     python3 python_play/BiGramCompressor/BigramModel.py test
     # The test command will build the bigram model and run one of the wav files through
 
+    ./eval.sh # in the root dir of the repo
+
 Or you can just look in the python notebooks
 
 If you want to visualize the uml diagrams explaining the bigram compressor
