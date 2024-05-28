@@ -1,6 +1,6 @@
 # Neuralink Compression:
 
-# Day 4 2.85x with bigrams!
+# Day 4 2.85x with Bigrams!
 
 Bigram Compressors!
 At the end of day 2, I noted that we probably don't need a neural network, and we can probably do sequence prediction fairly well with only a single value.
@@ -10,7 +10,8 @@ Then it builds a bigram model of these values.
 
 To get started go to the getting started section at the bottom.
 
-If you look in figma
+If you look in figma you'll see a breakdown of the thinking:
+https://www.figma.com/board/heWNpubt54RsLYn13DYlH5/Neuralink-Compression?node-id=0-1&t=q4PNmmy1iaX92DGr-1
 
 # Day 2 and earlier
 
