@@ -9,3 +9,8 @@ data/
 *.zip
 *.wav
 *.dat
+*.npy
+.idea
+.vscode
+.codiumai.toml
+*.pkl

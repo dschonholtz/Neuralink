@@ -4,3 +4,4 @@ pydub
 click
 soundfile
 pyedflib
+pyflac

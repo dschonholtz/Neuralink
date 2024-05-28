@@ -1,5 +1,19 @@
 # Neuralink Compression:
 
+# Day 4 2.85x with bigrams!
+
+Bigram Compressors!
+At the end of day 2, I noted that we probably don't need a neural network, and we can probably do sequence prediction fairly well with only a single value.
+
+This encodes all values to 10 bits as there are only 1024 unique values in this dataset.
+Then it builds a bigram model of these values.
+
+To get started go to the getting started section at the bottom.
+
+If you look in figma
+
+# Day 2 and earlier
+
 ## 2.54 with Optimal Huffman Coding,
 
 ## and 2.268 or .6% better than zlib with one hop look up,
@@ -204,11 +218,73 @@ The problems here come back to being patient specific, and having to train a new
 
 If you gave me data and some GPUs then I'd love to give it a whirl though. I'll also run this by my lab and see if I can do this in parallel with the data pipeline stuff I'm currently working on.
 
+## Wait do we we need the Neural Net? (Requirements and complexity are bad)
+
+Training neural networks is time consuming error prone, and potentially faulty.
+In the look up compressor, we already have the probability distribution of the potential next values. A time series neural network would probably do better, but the idea of we can send less bits for common next values hasn't been fully squeezed yet and is still notably distinct from general common sequence matching in run length encoding or in huffman.
+
+So let's go back to our jupyter notebook, load up the generated lookup_table.npy file that Lookup compressor generated and then we can calculate what the optimal window size is and how to send less bits.
+
+The idea is the optimal window size may be 128, but maybe if in the value is in the top 4 common positions we only send 2 bits to signify that.
+
+So something like:
+
+Break potential outputs into 4 sections.
+
+1. The result is in the top 8 results
+2. The result is in the top 32 results
+3. The result is in the top 128 results
+4. The result wasn't in the top 128
+
+We then can transmit 2 bits to signify which category it is in. Then:
+
+    3 bits for category 1
+    5 bits for category 2
+    7 bits for category 3
+    10 bits for category 4
+
+Looking at a quick notebook calculation:
+
+    Top 1 positions: 16.53% of values
+    Top 2 positions: 28.04% of values
+    Top 4 positions: 44.58% of values
+    Top 8 positions: 65.84% of values
+    Top 16 positions: 88.07% of values
+    Top 32 positions: 99.61% of values
+    Top 64 positions: 100.00% of values
+    Top 128 positions: 100.00% of values
+
 # Getting Started
 
     python3 -m venv venv
     source venv/bin/activate
     pip install -r requirements.txt
-    python3 python_play/Test.py compress --method lookup
+    cp data.zip Neuralink/
+
+    # if you have the data files
+    cp bigram_model.pkl Nueralink/
+    cp lookup_tables.pkl Neuralink/
+
+    # if you want to generate them yourself
+    unzip data.zip
+    python3 python_play/BiGramCompressor/Tokenizer.py
+    python3 python_play/BiGramCompressor/BigramModel.py test
+    # The test command will build the bigram model and run one of the wav files through
+
+    ./eval.sh # in the root dir of the repo
 
 Or you can just look in the python notebooks
+
+If you want to visualize the uml diagrams explaining the bigram compressor
+Install the PlantUml extension Then you have to adjust the settings.
+I am using the remote server in their settings.
+
+![Bigram UML](Images/BigramUML.png)
+
+# Appendix
+
+![Pic of Huffman Design Diagram](Images/HuffmanDiagram.png)
+
+Figma for where I am doing some design like the above.
+
+https://www.figma.com/board/heWNpubt54RsLYn13DYlH5/Untitled?node-id=0-1&t=CfNTYalkSzWcyR8q-1

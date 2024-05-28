@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+input_file="$1"
+output_file="$2"
+lookup_file="lookup_tables.pkl"
+bigram_model_file="bigram_model.pkl"
+
+
+python3 python_play/BigramCompressor/BigramModel.py compress "$input_file" "$lookup_file" "$bigram_model_file" "$output_file"
