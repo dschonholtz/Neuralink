@@ -1,0 +1,64 @@
+@startuml
+
+package "Bi-Gram Compression System" {
+
+    package "Shared Libraries" {
+        class Tokenizer {
+            + full_lookup(array_of_1024_values: List) : List
+            + convert_to_binary_string(value: int) : String
+            + tokenize_audio_data(audio_data: AudioData) : List
+        }
+
+        class bigramModel {
+            + build_bigram_model(tokens: List) : BigramModel
+            + convert_map_to_sorted_array(map: Map) : List
+            + predict_next_values(bigram_model: BigramModel, current_value: int) : List
+        }
+
+        class Compressor {
+            + compress_audio(audio_data: AudioData, bigram_model: BigramModel) : CompressedAudio
+            + tokenize_to_10_bit_strings(value: int) : String
+            + get_sorted_next_values(bigram_model: BigramModel, current_value: int) : List
+            + category_0_compression(value: int) : CompressedValue
+            + category_1_compression(value: int) : CompressedValue
+            + category_2_compression(value: int) : CompressedValue
+            + category_3_compression(value: int) : CompressedValue
+        }
+    }
+
+    class Prep {
+        + read_wav_directory(directory_path: String)
+        + tokenize_audio_data(audio_data: AudioData)
+        + build_bigram_model(tokens: List)
+        + save_model_to_disk(model: BigramModel, file_path: String)
+    }
+
+    class Encode {
+        + load_model_from_disk(file_path: String)
+        + read_wav_file(file_path: String)
+        + compress_audio(audio_data: AudioData, model: BigramModel)
+        + save_compressed_audio(compressed_data: CompressedAudio, output_path: String)
+    }
+
+    class Decode {
+        + load_model_from_disk(file_path: String)
+        + read_compressed_file(file_path: String)
+        + decompress_audio(compressed_data: CompressedAudio, model: BigramModel)
+        + save_decompressed_audio(audio_data: AudioData, output_path: String)
+    }
+
+    Prep ..> Tokenizer : <<use>>
+    Prep ..> bigramModel : <<use>>
+    Encode ..> Tokenizer : <<use>>
+    Encode ..> bigramModel : <<use>>
+    Encode ..> Compressor : <<use>>
+    Decode ..> bigramModel : <<use>>
+    Decode ..> Compressor : <<use>>
+
+    Prep ..> Encode : <<use>>
+    Prep ..> Decode : <<use>>
+    Encode ..> Decode : <<use>>
+
+}
+
+@enduml

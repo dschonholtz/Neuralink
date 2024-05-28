@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-EXE_DIR="cpp/build"
-
 rm -rf data
 unzip data.zip
 
@@ -10,8 +8,8 @@ get_file_size() {
 }
 
 total_size_raw=0
-encoder_size=$(get_file_size "${EXE_DIR}/encode")
-decoder_size=$(get_file_size "${EXE_DIR}/decode")
+encoder_size=$(get_file_size encode)
+decoder_size=$(get_file_size decode)
 total_size_compressed=$((encoder_size + decoder_size))
 
 for file in data/*
@@ -20,8 +18,8 @@ do
   compressed_file_path="${file}.brainwire"
   decompressed_file_path="${file}.copy"
 
-  "${EXE_DIR}/encode" "$file" "$compressed_file_path"
-  "${EXE_DIR}/decode" "$compressed_file_path" "$decompressed_file_path"
+  ./encode "$file" "$compressed_file_path"
+  ./decode "$compressed_file_path" "$decompressed_file_path"
 
   file_size=$(get_file_size "$file")
   compressed_size=$(get_file_size "$compressed_file_path")

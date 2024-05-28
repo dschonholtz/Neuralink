@@ -249,6 +249,12 @@ Looking at a quick notebook calculation:
 
 Or you can just look in the python notebooks
 
+If you want to visualize the uml diagrams explaining the bigram compressor
+Install the PlantUml extension Then you have to adjust the settings.
+I am using the remote server in their settings.
+
+![Bigram UML](Images/BigramUML.png)
+
 # Appendix
 
 ![Pic of Huffman Design Diagram](Images/HuffmanDiagram.png)

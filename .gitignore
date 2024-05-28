@@ -13,3 +13,4 @@ data/
 .idea
 .vscode
 .codiumai.toml
+*.pkl
