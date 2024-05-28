@@ -239,8 +239,8 @@ def test():
     bigram_model_path = "bigram_model.pkl"
     all_audio_data = load_all_audio_data("./data")
 
-    # bigram_model = build_bigram_model(all_audio_data, lookup_file_path)
-    # save_bigram_model(bigram_model, bigram_model_path)
+    bigram_model = build_bigram_model(all_audio_data, lookup_file_path)
+    save_bigram_model(bigram_model, bigram_model_path)
 
     _compress(wav_file_path, lookup_file_path, bigram_model_path)
 

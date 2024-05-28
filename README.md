@@ -1,5 +1,19 @@
 # Neuralink Compression:
 
+# Day 4 2.85x with bigrams!
+
+Bigram Compressors!
+At the end of day 2, I noted that we probably don't need a neural network, and we can probably do sequence prediction fairly well with only a single value.
+
+This encodes all values to 10 bits as there are only 1024 unique values in this dataset.
+Then it builds a bigram model of these values.
+
+To get started go to the getting started section at the bottom.
+
+If you look in figma
+
+# Day 2 and earlier
+
 ## 2.54 with Optimal Huffman Coding,
 
 ## and 2.268 or .6% better than zlib with one hop look up,
@@ -237,7 +251,7 @@ Looking at a quick notebook calculation:
     Top 8 positions: 65.84% of values
     Top 16 positions: 88.07% of values
     Top 32 positions: 99.61% of values
-    Top 64 positions: 100.00% of values # something is off because I thought I saw 128 beat 64
+    Top 64 positions: 100.00% of values
     Top 128 positions: 100.00% of values
 
 # Getting Started
@@ -245,7 +259,17 @@ Looking at a quick notebook calculation:
     python3 -m venv venv
     source venv/bin/activate
     pip install -r requirements.txt
-    python3 python_play/Test.py compress --method lookup
+    cp data.zip Neuralink/
+
+    # if you have the data files
+    cp bigram_model.pkl Nueralink/
+    cp lookup_tables.pkl Neuralink/
+
+    # if you want to generate them yourself
+    unzip data.zip
+    python3 python_play/BiGramCompressor/Tokenizer.py
+    python3 python_play/BiGramCompressor/BigramModel.py test
+    # The test command will build the bigram model and run one of the wav files through
 
 Or you can just look in the python notebooks
 
